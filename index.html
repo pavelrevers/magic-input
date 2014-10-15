@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <input id="input-mask" type="text" value="" />
+        <input id="magic-input" type="text" value="" />
+        <script type="text/javascript" charset="utf-8">
+            var MagicInput = function (input) {
+                this.rawVal = '';
+                this.cpos = 0;
+                this.DOMElement = input;
+
+                this.DOMElement.oninput = this.toUpperCase.bind(this);
+            }
+
+            MagicInput.prototype.toUpperCase = function (e) {
+                this.rawVal = e.target.value;
+                this.cpos = e.target.selectionStart;
+                e.target.value = this.rawVal.toUpperCase();
+                this.DOMElement.setSelectionRange(this.cpos, this.cpos);
+            };
+
+            var mi = new MagicInput(document.getElementById('magic-input'));
+            window.cpos = 0;
+            var oldVal = '';
+            var rawVal = '';
+            var input = document.getElementById('input-mask');
+            console.dir(input);
+            input.focus();
+            input.oninput = setCPos;
+            //input.onclick = setCPos;
+            input.onselect = function () {
+                console.log(arguments);
+            };
+            function setCPos(e) {
+                console.log(e);
+                console.log('selectionStart', e.target.selectionStart);
+                window.cpos = e.target.selectionStart;
+                // if (/\D/g.test(input.value)) {
+                //     input.value = oldVal;
+                // }
+                var mask = '+9(999)999-99-99';
+
+                rawVal = e.target.value.match(/\d/g);
+
+                //maskStart = mask.split(/\d/)[0];
+                maskArr = mask.match(/\D*\d\D*/g);
+                console.log(maskArr);
+                input.value = (function () {
+                    var newVal = '';
+                    if (!rawVal) return newVal;
+                    for (var i = 0; i < rawVal.length; i++) {
+                        if (!maskArr[i]) return newVal;
+                        newVal += maskArr[i].replace('9', rawVal[i]);
+                    }
+                    return newVal;
+                })();
+                console.log(window.cpos);
+                window.cpos;
+                console.log(window.cpos);
+                if (oldVal.length > input.value.length) {
+                    console.log('del');
+                    input.setSelectionRange(window.cpos, window.cpos);
+                } else if (oldVal.length < input.value.length) {
+                    console.log('ins', window.cpos, input.value.length - oldVal.length);
+                    window.cpos = window.cpos + input.value.length - oldVal.length - 1;
+                    input.setSelectionRange(window.cpos, window.cpos);
+                }
+                oldVal = input.value;
+            }
+        </script>
+    </body>
+</html>
