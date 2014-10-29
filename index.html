@@ -4,70 +4,184 @@
         <meta charset="utf-8">
     </head>
     <body>
-        <input id="input-mask" type="text" value="" />
+        
         <input id="magic-input" type="text" value="" />
+        <input id="input-mask" type="text" value="+9 999 999-99-99" />
+        <button>Mask</button>
         <script type="text/javascript" charset="utf-8">
+
+            // MagicInput.prototype.toUpperCase = function (e) {
+            //     this.rawVal = e.target.value;
+            //     this.cpos = e.target.selectionStart;
+            //     e.target.value = this.rawVal.toUpperCase();
+            //     this.HTMLElement.setSelectionRange(this.cpos, this.cpos);
+            // };
+            // var MagicInput = function (input) {
+            //     this.rawVal = '';
+            //     this.cpos = 0;
+            //     this.HTMLElement = input;
+
+            //     this.HTMLElement.oninput = this.toUpperCase.bind(this);
+            // }
+
+            // MagicInput.prototype.toUpperCase = function (e) {
+            //     this.rawVal = e.target.value;
+            //     this.cpos = e.target.selectionStart;
+            //     e.target.value = this.rawVal.toUpperCase();
+            //     this.HTMLElement.setSelectionRange(this.cpos, this.cpos);
+            // };
+
             var MagicInput = function (input) {
-                this.rawVal = '';
-                this.cpos = 0;
-                this.DOMElement = input;
+                this.value = input.value;
+                this.HTMLElement = input;
 
-                this.DOMElement.oninput = this.toUpperCase.bind(this);
-            }
-
-            MagicInput.prototype.toUpperCase = function (e) {
-                this.rawVal = e.target.value;
-                this.cpos = e.target.selectionStart;
-                e.target.value = this.rawVal.toUpperCase();
-                this.DOMElement.setSelectionRange(this.cpos, this.cpos);
+                this.HTMLElement.oninput = function () {
+                    // this.oninput();
+                    this.setMask();
+                }.bind(this);
             };
 
-            var mi = new MagicInput(document.getElementById('magic-input'));
-            window.cpos = 0;
-            var oldVal = '';
-            var rawVal = '';
-            var input = document.getElementById('input-mask');
-            console.dir(input);
-            input.focus();
-            input.oninput = setCPos;
-            //input.onclick = setCPos;
-            input.onselect = function () {
-                console.log(arguments);
+
+            MagicInput.prototype.mask = function (mask) {
+                this.incrMask = mask.match(/\D*\d\D*/g) || [];
+                this.decrMask = mask.match(/\D*\d/g) || [];
+
+                return this;
             };
-            function setCPos(e) {
-                console.log(e);
-                console.log('selectionStart', e.target.selectionStart);
-                window.cpos = e.target.selectionStart;
-                // if (/\D/g.test(input.value)) {
-                //     input.value = oldVal;
-                // }
-                var mask = '+9(999)999--99--99';
-                rawVal = e.target.value.match(/\d/g);
-                //maskStart = mask.split(/\d/)[0];
-                maskArr = mask.match(/\D*\d\D*/g);
-                console.log(maskArr);
-                input.value = (function () {
+
+            MagicInput.prototype.setMask = function () {
+                var newVal = '';
+
+                var valueAfterEvent = this.HTMLElement.value;
+
+                if (valueAfterEvent === this.value) return;
+
+                var rawValueAfterEvent = valueAfterEvent.match(/\d/g);
+
+                var cursorPositionAfterEvent = this.HTMLElement.selectionStart;
+                var mask = this.mask;
+                var maskArr = [];
+                
+                if (valueAfterEvent.length >= this.value.length) {
+                    maskArr = this.incrMask;
+                } else {
+                    maskArr = this.decrMask;
+                }
+
+                console.log('afterEvent', {
+                    valueBeforeEvent: this.value,
+                    valueAfterEvent: valueAfterEvent,
+                    rawValueAfterEvent: rawValueAfterEvent,
+                    newVal: newVal,
+                    cursorPositionAfterEvent: cursorPositionAfterEvent,
+                    mask: mask,
+                    maskArr: maskArr,
+                    input: this.HTMLElement
+                });
+                //return;
+
+                newVal = (function () {
                     var newVal = '';
-                    if (!rawVal) return newVal;
-                    for (var i = 0; i < rawVal.length; i++) {
+                    if (!rawValueAfterEvent) return newVal;
+                    for (var i = 0; i < rawValueAfterEvent.length; i++) {
                         if (!maskArr[i]) return newVal;
-                        newVal += maskArr[i].replace('9', rawVal[i]);
+                        newVal += maskArr[i].replace('9', rawValueAfterEvent[i]);
                     }
                     return newVal;
                 })();
-                console.log(window.cpos);
-                window.cpos;
-                console.log(window.cpos);
-                if (oldVal.length > input.value.length) {
-                    console.log('del');
-                    input.setSelectionRange(window.cpos, window.cpos);
-                } else if (oldVal.length < input.value.length) {
-                    console.log('ins', window.cpos, input.value.length - oldVal.length);
-                    window.cpos = window.cpos + input.value.length - oldVal.length - 1;
-                    input.setSelectionRange(window.cpos, window.cpos);
+
+                this.HTMLElement.value = newVal;
+
+                if (this.HTMLElement === document.activeElement) {
+                    if (newVal.length >= this.value.length) {
+                    } else {
+                        while (!/\d/.test(newVal[cursorPositionAfterEvent - 1]) && cursorPositionAfterEvent > 0) {
+                            console.log(cursorPositionAfterEvent, newVal, newVal[cursorPositionAfterEvent]);
+                            cursorPositionAfterEvent--;
+                        }
+                        this.HTMLElement.setSelectionRange(cursorPositionAfterEvent, cursorPositionAfterEvent);
+                    }
                 }
-                oldVal = input.value;
+                
+                this.value = newVal;
+                
             }
+
+            
+
+            
+            // window.cpos = 0;
+            // var oldVal = '';
+            // var rawVal = '';
+            // var input = document.getElementById('input-mask');
+            // console.dir(input);
+            // input.focus();
+            // input.oninput = mask;
+            // //input.onclick = setCPos;
+            // input.onselect = function () {
+            //     console.log(arguments);
+            // };
+            // function setCPos(e) {
+            //     console.log(e);
+            //     console.log('selectionStart', e.target.selectionStart);
+            //     window.cpos = e.target.selectionStart;
+            //     // if (/\D/g.test(input.value)) {
+            //     //     input.value = oldVal;
+            //     // }
+            //     var mask = '+9(999)999--99--99';
+            //     rawVal = e.target.value.match(/\d/g);
+            //     //maskStart = mask.split(/\d/)[0];
+            //     maskArr = mask.match(/\D*\d\D*/g);
+            //     console.log(maskArr);
+            //     input.value = (function () {
+            //         var newVal = '';
+            //         if (!rawVal) return newVal;
+            //         for (var i = 0; i < rawVal.length; i++) {
+            //             if (!maskArr[i]) return newVal;
+            //             newVal += maskArr[i].replace('9', rawVal[i]);
+            //         }
+            //         return newVal;
+            //     })();
+            //     console.log(window.cpos);
+            //     window.cpos;
+            //     console.log(window.cpos);
+            //     if (oldVal.length > input.value.length) {
+            //         console.log('del');
+            //         input.setSelectionRange(window.cpos, window.cpos);
+            //     } else if (oldVal.length < input.value.length) {
+            //         console.log('ins', window.cpos, input.value.length - oldVal.length);
+            //         window.cpos = window.cpos + input.value.length - oldVal.length - 1;
+            //         input.setSelectionRange(window.cpos, window.cpos);
+            //     }
+            //     oldVal = input.value;
+            // }
+            // var valueBeforeEvent = '';
+
+
+            
+
+            var mi = new MagicInput(document.getElementById('magic-input'));
+
+            mi.mask('+9 999 999-99-99').setMask();
+
+            // document.getElementsByTagName('button')[0].onclick = function () {
+            //     mi.mask(document.getElementById('input-mask').value);
+            // }
+
+            // document.getElementById('input-mask').oninput = function () {
+            //     mi.mask(document.getElementById('input-mask').value);
+            // }
+
+            // mi.oninput = function () {
+            //     if (!mi.HTMLElement.value.match(/\d/g)) return;
+            //     console.log(mi.HTMLElement.value.match(/\d/g)[0]);
+            //     if (mi.HTMLElement.value.match(/\d/g)[0] == '8') {
+            //         mi.mask('9 999 999-99-99');
+            //     }
+            //     if (mi.HTMLElement.value.match(/\d/g)[0] != '8') {
+            //         mi.mask('+9 999 999-99-99');
+            //     }
+            // }
         </script>
     </body>
 </html>
