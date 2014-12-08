@@ -31,81 +31,170 @@
             //     this.HTMLElement.setSelectionRange(this.cpos, this.cpos);
             // };
 
-            var MagicInput = function (input) {
-                this.value = input.value;
-                this.HTMLElement = input;
+            var mask = '++d ddd ddd-dd-dd';
 
-                this.HTMLElement.oninput = function () {
-                    // this.oninput();
+            var MagicInput = function (input) {
+                this.newValue = this.value;
+                this.oldValue = this.newValue;
+                this.setMask = setMask;
+
+                this.oninput = function (e) {
+                    this.newValue = this.value;
                     this.setMask();
                 }.bind(this);
             };
 
+            MagicInput.prototype = document.getElementById('magic-input');
 
-            MagicInput.prototype.mask = function (mask) {
-                this.incrMask = mask.match(/\D*\d\D*/g) || [];
-                this.decrMask = mask.match(/\D*\d/g) || [];
+            function setMask() {
+                console.log('setMask');
+                var newValue = this.newValue;
+                var value = '';
+                var i = 0;
+                var l = newValue.length;
+                var j = 0;
+                var jl = mask.length;
 
-                return this;
-            };
+                var inc = 0;
 
-            MagicInput.prototype.setMask = function () {
-                var newVal = '';
+                var state = 'empty';
+                var buff = '';
 
-                var valueAfterEvent = this.HTMLElement.value;
+                while (j < jl && inc < 20) {
+                    var currentChar = newValue[i];
+                    var maskChar = mask[j];
+                    console.log('state', state, 'm', j, 'mv', maskChar, 'v', i, 'vv', currentChar);
 
-                if (valueAfterEvent === this.value) return;
-
-                var rawValueAfterEvent = valueAfterEvent.match(/\d/g);
-
-                var cursorPositionAfterEvent = this.HTMLElement.selectionStart;
-                var mask = this.mask;
-                var maskArr = [];
-                
-                if (valueAfterEvent.length >= this.value.length) {
-                    maskArr = this.incrMask;
-                } else {
-                    maskArr = this.decrMask;
-                }
-
-                console.log('afterEvent', {
-                    valueBeforeEvent: this.value,
-                    valueAfterEvent: valueAfterEvent,
-                    rawValueAfterEvent: rawValueAfterEvent,
-                    newVal: newVal,
-                    cursorPositionAfterEvent: cursorPositionAfterEvent,
-                    mask: mask,
-                    maskArr: maskArr,
-                    input: this.HTMLElement
-                });
-                //return;
-
-                newVal = (function () {
-                    var newVal = '';
-                    if (!rawValueAfterEvent) return newVal;
-                    for (var i = 0; i < rawValueAfterEvent.length; i++) {
-                        if (!maskArr[i]) return newVal;
-                        newVal += maskArr[i].replace('9', rawValueAfterEvent[i]);
+                    switch (state) {
+                        case 'empty':
+                            stateEmpty();
+                            break;
+                        case 'char':
+                            stateChar();
+                            break;
                     }
-                    return newVal;
-                })();
 
-                this.HTMLElement.value = newVal;
-
-                if (this.HTMLElement === document.activeElement) {
-                    if (newVal.length >= this.value.length) {
-                    } else {
-                        while (!/\d/.test(newVal[cursorPositionAfterEvent - 1]) && cursorPositionAfterEvent > 0) {
-                            console.log(cursorPositionAfterEvent, newVal, newVal[cursorPositionAfterEvent]);
-                            cursorPositionAfterEvent--;
+                    function stateEmpty() {
+                        switch (maskChar) {
+                            case 'd':
+                                if (/\d/.test(currentChar)) {
+                                    value += buff + currentChar;
+                                    buff = '';
+                                    state = 'char';
+                                    i++;
+                                    j++;
+                                }
+                                break;
+                            default:
+                                if (currentChar === maskChar) {
+                                    value += maskChar;
+                                    i++;
+                                } else {
+                                    buff += maskChar;
+                                }
+                                j++;
                         }
-                        this.HTMLElement.setSelectionRange(cursorPositionAfterEvent, cursorPositionAfterEvent);
                     }
+
+                    function stateChar() {
+                        switch (maskChar) {
+                            case 'd':
+                                if (/\d/.test(currentChar)) {
+                                    value += currentChar;
+                                    i++;
+                                    j++;
+                                }
+                                break;
+                            default:
+                                if (currentChar === maskChar) {
+                                    value += maskChar;
+                                    i++;
+                                } else {
+                                    buff += maskChar;
+                                }
+                                j++;
+                        }
+                    }
+
+                    inc++;
                 }
-                
-                this.value = newVal;
-                
+
+                this.value = value;
+
+                this.oldValue = value;
             }
+
+            // MagicInput.prototype.mask = function (mask) {
+            //     this.incrMask = mask.match(/\D*\d\D*/g) || [];
+            //     this.decrMask = mask.match(/\D*\d/g) || [];
+
+            //     return this;
+            // };
+
+            // var mi = new MagicInput(document.getElementById('magic-input'));
+            window.mi = new MagicInput();
+
+            console.log(window.mi);
+
+            // mi.mask('+9 999 999-99-99').setMask();
+
+            // MagicInput.prototype.setMask = function () {
+            //     var newVal = '';
+
+            //     var valueAfterEvent = this.HTMLElement.value;
+
+            //     if (valueAfterEvent === this.value) return;
+
+            //     var rawValueAfterEvent = valueAfterEvent.match(/\d/g);
+
+            //     var cursorPositionAfterEvent = this.HTMLElement.selectionStart;
+            //     var mask = this.mask;
+            //     var maskArr = [];
+                
+            //     if (valueAfterEvent.length >= this.value.length) {
+            //         maskArr = this.incrMask;
+            //     } else {
+            //         maskArr = this.decrMask;
+            //     }
+
+            //     console.log('afterEvent', {
+            //         valueBeforeEvent: this.value,
+            //         valueAfterEvent: valueAfterEvent,
+            //         rawValueAfterEvent: rawValueAfterEvent,
+            //         newVal: newVal,
+            //         cursorPositionAfterEvent: cursorPositionAfterEvent,
+            //         mask: mask,
+            //         maskArr: maskArr,
+            //         input: this.HTMLElement
+            //     });
+            //     //return;
+
+            //     newVal = (function () {
+            //         var newVal = '';
+            //         if (!rawValueAfterEvent) return newVal;
+            //         for (var i = 0; i < rawValueAfterEvent.length; i++) {
+            //             if (!maskArr[i]) return newVal;
+            //             newVal += maskArr[i].replace('9', rawValueAfterEvent[i]);
+            //         }
+            //         return newVal;
+            //     })();
+
+            //     this.HTMLElement.value = newVal;
+
+            //     if (this.HTMLElement === document.activeElement) {
+            //         if (newVal.length >= this.value.length) {
+            //         } else {
+            //             while (!/\d/.test(newVal[cursorPositionAfterEvent - 1]) && cursorPositionAfterEvent > 0) {
+            //                 console.log(cursorPositionAfterEvent, newVal, newVal[cursorPositionAfterEvent]);
+            //                 cursorPositionAfterEvent--;
+            //             }
+            //             this.HTMLElement.setSelectionRange(cursorPositionAfterEvent, cursorPositionAfterEvent);
+            //         }
+            //     }
+                
+            //     this.value = newVal;
+                
+            // }
 
             
 
@@ -160,9 +249,7 @@
 
             
 
-            var mi = new MagicInput(document.getElementById('magic-input'));
-
-            mi.mask('+9 999 999-99-99').setMask();
+            
 
             // document.getElementsByTagName('button')[0].onclick = function () {
             //     mi.mask(document.getElementById('input-mask').value);
